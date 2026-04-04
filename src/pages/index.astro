@@ -1,0 +1,12 @@
+---
+import Common from "../components/common/Common.astro";
+import { Three } from "../components/three/Three";
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout>
+  <main>
+    <Common />
+    <Three client:only="react" />
+  </main>
+</Layout>
