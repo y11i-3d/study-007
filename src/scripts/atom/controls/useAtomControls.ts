@@ -94,14 +94,17 @@ const buildSchemaItems = (
       Object.assign(item, settings);
       item.onChange = (v: number, _path: string, ctx: { initial: boolean }) => {
         if (ctx.initial) return;
-        const current = store
-          .get(p.atom as Atom<Vector2 | Vector3 | Vector4>)
-          .clone() as AnyVector;
-        current[axis] = v;
+        const stored = store.get(p.atom as Atom<Vector2 | Vector3 | Vector4>);
+        const display = (
+          p.read
+            ? p.read(stored as Vector2 & Vector3 & Vector4)
+            : stored.clone()
+        ) as AnyVector;
+        display[axis] = v;
         store.set(
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           p.atom as any,
-          p.write ? p.write(current as Vector2 & Vector3 & Vector4) : current,
+          p.write ? p.write(display as Vector2 & Vector3 & Vector4) : display,
         );
       };
     } else {
@@ -164,17 +167,36 @@ const collectAtoms = (
   return result;
 };
 
+type TransformEntry =
+  | { path: string; atom: Atom<number>; axis: undefined }
+  | { path: string; atom: Atom<AnyVector>; axis: Axis };
+
 const collectTransformEntries = (
   params: AtomControlParams,
   prefix = "",
-): { path: string; atom: Atom<number> }[] => {
-  const result: { path: string; atom: Atom<number> }[] = [];
+): TransformEntry[] => {
+  const result: TransformEntry[] = [];
   for (const [key, value] of Object.entries(params)) {
     const path = prefix ? `${prefix}.${key}` : key;
     if (isCFolder(value)) {
       result.push(...collectTransformEntries(value.children, path));
     } else if (value.type === "number" && (value.write || value.read)) {
-      result.push({ path, atom: value.atom as Atom<number> });
+      result.push({ path, atom: value.atom as Atom<number>, axis: undefined });
+    } else if (
+      (value.type === "vec2" ||
+        value.type === "vec3" ||
+        value.type === "vec4") &&
+      (value.write || value.read)
+    ) {
+      const axisCount =
+        value.type === "vec2" ? 2 : value.type === "vec3" ? 3 : 4;
+      axes.slice(0, axisCount).forEach((axis) => {
+        result.push({
+          path: `${path}_${axis}`,
+          atom: value.atom as Atom<AnyVector>,
+          axis,
+        });
+      });
     }
   }
   return result;
@@ -217,7 +239,7 @@ export const useAtomControls = (params: AtomControlParams) => {
           }
 
           // overlay
-          for (const { path, atom } of entries) {
+          for (const { path, atom, axis } of entries) {
             const input = document.getElementById(path);
             const rangeGrid = input?.parentElement?.parentElement;
             const inputContainer = input?.parentElement;
@@ -265,7 +287,11 @@ export const useAtomControls = (params: AtomControlParams) => {
             // 値を更新
             const overlay = overlays.get(path);
             if (overlay) {
-              overlay.value = String(store.get(atom));
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const raw = store.get(atom as Atom<any>);
+              overlay.value = String(
+                axis !== undefined ? (raw as AnyVector)[axis] : raw,
+              );
             }
           }
         }),

@@ -3,7 +3,7 @@
 @layer base {
   html,
   body {
-    line-height: normal;
+    line-height: 1.4;
     overflow: hidden;
     overscroll-behavior: none;
     touch-action: manipulation;
