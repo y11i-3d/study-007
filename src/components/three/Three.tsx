@@ -2,6 +2,7 @@ import { Canvas } from "@react-three/fiber";
 import { Leva } from "leva";
 import { WebGPURenderer } from "three/webgpu";
 import { ThreeCamera } from "./ThreeCamera";
+import { ThreeDemo } from "./ThreeDemo";
 import { ThreeProvider } from "./ThreeProvider";
 import { ThreeSetup } from "./ThreeSetup";
 
@@ -23,6 +24,7 @@ export const Three = () => {
         <ThreeProvider>
           <ThreeSetup />
           <ThreeCamera />
+          <ThreeDemo />
         </ThreeProvider>
       </Canvas>
       <div className="in-[html.hide-controls]:hidden in-[html.hide-ui]:hidden">
