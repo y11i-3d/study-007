@@ -21,7 +21,9 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "record": "node tools/record",
+    "concat": "node tools/record/concat.js"
   },
   "volta": {
     "node": "24.14.1"

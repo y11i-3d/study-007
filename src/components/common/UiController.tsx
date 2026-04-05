@@ -16,6 +16,8 @@ export const UiController = () => {
     const params = new URLSearchParams(window.location.search);
     if (!params.has("dev")) return;
 
+    document.documentElement.classList.add("dev");
+
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
