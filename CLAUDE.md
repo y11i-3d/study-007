@@ -41,6 +41,8 @@ src/
 │   │   ├── controls/     # Leva UI ↔ Jotai atom 双方向同期
 │   │   ├── uniforms/     # Jotai atom → Three.js TSL uniform 変換
 │   │   └── misc/         # その他
+│   └── three/        # Three.js ユーティリティ
+│       └── utils/    # 汎用ヘルパー関数
 ├── styles/           # Tailwind CSS
 └── types/            # 型定義 (WebGPU JSX 拡張, Vite env)
 ```

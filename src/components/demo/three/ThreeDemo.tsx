@@ -1,4 +1,4 @@
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useEffect, useMemo, useRef } from "react";
 import type { FnNode } from "three/src/nodes/tsl/TSLCore.js";
@@ -20,8 +20,9 @@ import {
   vec3,
   vec4,
 } from "three/tsl";
-import type { Node, StorageBufferNode } from "three/webgpu";
+import type { ComputeNode, Node, StorageBufferNode } from "three/webgpu";
 import { WebGPURenderer } from "three/webgpu";
+import { disposeComputeNode } from "../../../scripts/three/utils/disposeComputeNode";
 import { useDemoContext } from "../hooks/useDemoContext";
 import { CONSTS } from "../hooks/useDemoStates";
 import { useDemoSize } from "./hooks/useDemoSize";
@@ -30,6 +31,8 @@ import { useTSLDistortion } from "./hooks/useTSLDistortion";
 export const ThreeDemo = () => {
   const { atoms, uniforms } = useDemoContext();
   useDemoSize();
+
+  const renderer = useThree().gl as unknown as WebGPURenderer;
 
   const setTextWidths = useSetAtom(atoms.textWidths);
   const setLeftXs = useSetAtom(atoms.leftXs);
@@ -72,8 +75,11 @@ export const ThreeDemo = () => {
   // --- コンピュートシェーダー（numRows が変わったときだけ再生成） ---
   const numRows = useAtomValue(atoms.rows.num);
 
-  const { buf, computeNode } = useMemo(() => {
-    const buf = instancedArray(numRows, "vec2");
+  const bufRef = useRef<StorageBufferNode<"vec2"> | null>(null);
+  const computeNodeRef = useRef<ComputeNode | null>(null);
+
+  useEffect(() => {
+    const buf = instancedArray(numRows, "vec2") as StorageBufferNode<"vec2">;
 
     /* eslint-disable @typescript-eslint/no-explicit-any */
     const computeNode = Fn(() => {
@@ -164,10 +170,17 @@ export const ThreeDemo = () => {
         float(0),
       );
       buf.element(rowIdx).assign(vec2(domLeft, w));
-    })().compute(numRows);
+    })().compute(numRows) as ComputeNode;
     /* eslint-enable @typescript-eslint/no-explicit-any */
 
-    return { buf, computeNode };
+    bufRef.current = buf;
+    computeNodeRef.current = computeNode;
+    setTextWidths(null);
+    setLeftXs(null);
+
+    return () => {
+      disposeComputeNode(renderer, computeNode);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [numRows]);
 
@@ -178,21 +191,18 @@ export const ThreeDemo = () => {
   const numRowsRef = useRef(numRows);
   numRowsRef.current = numRows;
 
-  useEffect(() => {
-    setTextWidths(null);
-    setLeftXs(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [numRows]);
-
-  useFrame(({ gl }) => {
+  useFrame(() => {
+    const buf = bufRef.current;
+    const computeNode = computeNodeRef.current;
+    if (!buf || !computeNode) return;
     if (isReadingRef.current) return;
 
     const dispatchedNumRows = numRowsRef.current;
-    (gl as unknown as WebGPURenderer).compute(computeNode);
+    renderer.compute(computeNode);
 
     isReadingRef.current = true;
-    (gl as unknown as WebGPURenderer)
-      .getArrayBufferAsync((buf as StorageBufferNode<"vec2">).value)
+    renderer
+      .getArrayBufferAsync(buf.value)
       .then((ab: ArrayBuffer) => {
         if (numRowsRef.current !== dispatchedNumRows) return;
         const interleaved = new Float32Array(ab);
