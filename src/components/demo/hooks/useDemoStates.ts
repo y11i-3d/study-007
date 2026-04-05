@@ -25,6 +25,7 @@ export const useDemoStates = () => {
     return {
       textWidths: atom<Float32Array | null>(null),
       leftXs: atom<Float32Array | null>(null),
+      rendererLabel: atom("..."),
       fontSize: atom(16),
       japanese: atom(false),
       md: atom(false),
@@ -92,6 +93,7 @@ export const useDemoStates = () => {
 
   const controlParams = useMemo(
     () => ({
+      renderer: cString(atoms.rendererLabel, { editable: false }),
       fps: cString(fpsStr, { editable: false }),
       japanese: cBoolean(atoms.japanese),
       fontSize: cNumber(atoms.fontSize, { min: 16, max: 32, step: 2 }),
