@@ -69,7 +69,7 @@ export const TextOverlay = () => {
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLines(newLines);
-  }, [widths, numRows, startY, fontSize, japanese]);
+  }, [widths, numRows, fontSize, japanese]);
 
   if (numRows === 0) return null;
 
